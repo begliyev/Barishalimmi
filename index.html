@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kalbimin Şahanesine 🌸</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            /* Kıza yakın, soft, büyüleyici pembe-şeftali gradyanı */
+            background: linear-gradient(135deg, #ffe5ec 0%, #ffcad4 50%, #b5e2fa 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* GİRİŞ EKRANI (AŞK PANELİ) */
+        #login-screen {
+            position: fixed; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #ffcad4 0%, #ffe5ec 100%);
+            z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 20px;
+        }
+
+        .terminal-box {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 40px 30px; border-radius: 24px;
+            text-align: center; width: 100%; max-width: 340px;
+            box-shadow: 0 10px 30px rgba(255, 182, 193, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .terminal-header {
+            font-size: 13pt; font-weight: 600; letter-spacing: 1px;
+            margin-bottom: 25px; color: #ff477e;
+            text-shadow: 0 2px 4px rgba(255, 71, 126, 0.1);
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.9); 
+            border: 2px solid #ffb6c1;
+            color: #ff477e; padding: 14px; text-align: center;
+            font-size: 13pt; border-radius: 14px; outline: none;
+            box-shadow: 0 4px 10px rgba(255, 182, 193, 0.2);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        input:focus {
+            border-color: #ff477e;
+            box-shadow: 0 4px 15px rgba(255, 71, 126, 0.3);
+        }
+
+        .hint-text {
+            margin-top: 18px; font-size: 9.5pt; color: #ff7096; letter-spacing: 0.5px;
+        }
+
+        /* TUVALLER */
+        canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+        #particleCanvas { z-index: 1; }
+        #heartCanvas { z-index: 2; }
+        
+        /* MERKEZDEKİ YAZI ALANI */
+        #content-overlay {
+            position: absolute; top: 43%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10; display: none; opacity: 0;
+            transition: opacity 1.5s ease;
+            pointer-events: none;
+        }
+
+        #content-overlay.show-perfect {
+            display: block; opacity: 1;
+        }
+
+        .romantic-text {
+            color: #ffffff; font-family: 'Georgia', serif; font-style: italic;
+            line-height: 1.6; font-size: 13.5pt; font-weight: 600;
+            text-align: center; width: 200px;
+            /* Yumuşak ve asil büyüleyici gölge */
+            text-shadow: 0 2px 10px rgba(255, 26, 106, 0.8), 0 4px 20px rgba(255, 71, 126, 0.5), 0 0 3px rgba(0,0,0,0.1);
+        }
+
+        /* FOTOĞRAFLARIN SÜZÜLME ALANI */
+        #photo-area {
+            position: absolute; width: 100%; height: 100%; left: 0; top: 0; z-index: 20;
+            pointer-events: none;
+        }
+
+        .floating-photo {
+            position: absolute;
+            border: 3px solid #ffffff; border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(255, 105, 180, 0.25), 0 4px 10px rgba(255, 255, 255, 0.5);
+            object-fit: cover; width: 110px; height: 145px;
+            opacity: 0;
+            animation: softGloriousFloat 12s ease-in-out forwards;
+        }
+
+        @keyframes softGloriousFloat {
+            0% {
+                transform: translate(0, 40px) scale(0.9) rotate(-4deg);
+                opacity: 0;
+            }
+            15% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1) rotate(var(--r-rot));
+            }
+            85% {
+                opacity: 1;
+                transform: translate(var(--move-x), var(--move-y)) scale(1.02) rotate(var(--r-rot));
+            }
+            100% {
+                transform: translate(var(--move-x), calc(var(--move-y) - 40px)) scale(0.9) rotate(var(--r-rot));
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- GİRİŞ EKRANI -->
+    <div id="login-screen">
+        <div class="terminal-box">
+            <div class="terminal-header">🌸 Giriş Protokolü</div>
+            <input type="password" id="password" onkeypress="checkPassword(event)" placeholder="Anahtar kelime..." inputmode="text">
+            <div class="hint-text">Açar söz: Leýli</div>
+        </div>
+    </div>
+
+    <!-- EKRAN KATMANLARI -->
+    <canvas id="particleCanvas"></canvas>
+    <canvas id="heartCanvas"></canvas>
+    <div id="photo-area"></div>
+
+    <!-- TÜRKÇE SÖZ VE METİN KATMANI -->
+    <div id="content-overlay">
+        <div class="romantic-text">
+            Barışalım mı,<br>kalbimin şahanesi? 🌹✨
+        </div>
+    </div>
+
+    <script>
+        const pCanvas = document.getElementById('particleCanvas');
+        const pCtx = pCanvas.getContext('2d');
+        const hCanvas = document.getElementById('heartCanvas');
+        const hCtx = hCanvas.getContext('2d');
+
+        function initCanvases() {
+            pCanvas.width = hCanvas.width = window.innerWidth;
+            pCanvas.height = hCanvas.height = window.innerHeight;
+        }
+        initCanvases();
+
+        // SOFT ARKA PLAN PARÇACIKLARI (Narin Kalpler ve Işıltılar)
+        let backgroundParticles = [];
+        const maxBgParticles = 35;
+
+        function createBgParticle() {
+            return {
+                x: Math.random() * pCanvas.width,
+                y: pCanvas.height + Math.random() * 20,
+                size: Math.random() * 3 + 2,
+                speedY: Math.random() * 0.6 + 0.4,
+                opacity: Math.random() * 0.5 + 0.3,
+                isHeart: Math.random() > 0.6,
+                wobble: Math.random() * 2,
+                wobbleSpeed: Math.random() * 0.02 + 0.01
+            };
+        }
+
+        for(let i=0; i<maxBgParticles; i++) {
+            backgroundParticles.push(createBgParticle());
+            // İlk başta ekranın her yerine dağılsınlar
+            backgroundParticles[i].y = Math.random() * pCanvas.height;
+        }
+
+        // KALP TANECİKLERİ MOTORU
+        let heartParticles = [];
+        let heartX = window.innerWidth / 2;
+        let heartY = window.innerHeight * 0.43;
+        let currentScale = window.innerWidth < 450 ? 6.8 : 9.0; 
+
+        window.addEventListener('resize', () => {
+            initCanvases();
+            heartX = window.innerWidth / 2;
+            heartY = window.innerHeight * 0.43;
+            currentScale = window.innerWidth < 450 ? 6.8 : 9.0;
+            generateHeartParticles();
+        });
+
+        function getHeartPoint(t) {
+            return {
+                x: 16 * Math.pow(Math.sin(t), 3),
+                y: -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t))
+            };
+        }
+
+        function generateHeartParticles() {
+            heartParticles = [];
+            for (let i = 0; i < 150; i++) {
+                let t = (i / 150) * Math.PI * 2;
+                let point = getHeartPoint(t);
+                heartParticles.push({
+                    baseX: heartX + point.x * currentScale,
+                    baseY: heartY + point.y * currentScale,
+                    x: heartX + point.x * currentScale,
+                    y: heartY + point.y * currentScale,
+                    speed: 0.03 + Math.random() * 0.03,
+                    angle: Math.random() * Math.PI * 2,
+                    size: 1.5 + Math.random() * 1.5
+                });
+            }
+        }
+
+        // SOFT ARKA PLAN ÇİZİMİ
+        function drawBackgroundParticles() {
+            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+            
+            for (let i = 0; i < backgroundParticles.length; i++) {
+                let p = backgroundParticles[i];
+                p.y -= p.speedY;
+                p.wobble += p.wobbleSpeed;
+                let currentX = p.x + Math.sin(p.wobble) * 15;
+
+                pCtx.fillStyle = `rgba(255, 71, 126, ${p.opacity})`;
+                
+                if (p.isHeart) {
+                    // Küçük narin arka plan kalpleri çizimi
+                    pCtx.font = `${p.size * 3}px serif`;
+                    pCtx.fillText('❤️', currentX, p.y);
+                } else {
+                    // Parıldayan soft noktalar
+                    pCtx.beginPath();
+                    pCtx.arc(currentX, p.y, p.size, 0, Math.PI * 2);
+                    pCtx.fill();
+                }
+
+                if (p.y < -20) {
+                    backgroundParticles[i] = createBgParticle();
+                }
+            }
+        }
+
+        // PARILDAYAN CANLI KALP BULUTU ÇİZİMİ
+        function drawHeart() {
+            hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
+            
+            for (let i = 0; i < heartParticles.length; i++) {
+                let p = heartParticles[i];
+                p.angle += p.speed;
+                p.x = p.baseX + Math.sin(p.angle) * 2.0;
+                p.y = p.baseY + Math.cos(p.angle) * 2.0;
+
+                // Yumuşacık pembe-beyaz parıltı efekti
+                hCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                hCtx.shadowBlur = 10;
+                hCtx.shadowColor = '#ff477e';
+                
+                hCtx.beginPath();
+                hCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                hCtx.fill();
+            }
+            hCtx.shadowBlur = 0; 
+        }
+
+        function engineLoop() {
+            drawBackgroundParticles();
+            drawHeart();
+            requestAnimationFrame(engineLoop);
+        }
+
+        function checkPassword(event) {
+            if (event.key === 'Enter') {
+                const pass = document.getElementById('password').value.trim().toLowerCase();
+                if (pass === 'leýli' || pass === 'leyli') { 
+                    const gate = document.getElementById('login-screen');
+                    gate.style.opacity = '0';
+                    document.getElementById('password').blur();
+
+                    setTimeout(() => {
+                        gate.remove(); 
+                        document.getElementById('content-overlay').classList.add('show-perfect');
+                        
+                        generateHeartParticles();
+                        engineLoop(); 
+                        startGloriousPhotoStream(); 
+                    }, 800);
+                } else {
+                    alert('ÝALŇYŞ AÇAR SÖZ!');
+                }
+            }
+        }
+
+        // RESİM DOSYALARI (Kusursuz Entegre Linkler)
+        const photoUrls = [
+            'https://i.ibb.co/C50zxPD4/watermarked-img-10925359437932352695.png',
+            'https://i.ibb.co/r2FbsC7Z/Screenshot-2026-06-05-23-58-56-700-com-android-chrome.jpg',
+            'https://i.ibb.co/FbL2mG2t/Screenshot-2026-06-06-00-07-21-591-com-android-chrome.jpg',
+            'https://i.ibb.co/xSxX9nTw/Screenshot-2026-06-06-00-09-14-448-com-android-chrome.jpg',
+            'https://i.ibb.co/sdbyZhzB/Screenshot-2026-06-06-00-10-35-677-com-android-chrome.jpg',
+            'https://i.ibb.co/pBNyxYng/watermarked-img-10925359437932352695.png'
+        ];
+
+        // FOTOĞRAFLARI KALP ETRAFINA SOFT ŞEKİLDE DAĞITAN MOTOR
+        function startGloriousPhotoStream() {
+            setInterval(() => {
+                const img = document.createElement('img');
+                img.src = photoUrls[Math.floor(Math.random() * photoUrls.length)];
+                img.className = 'floating-photo';
+                
+                const screenWidth = window.innerWidth;
+                const screenHeight = window.innerHeight;
+                
+                let calculatedLeft = 0;
+                let calculatedTop = Math.random() * (screenHeight * 0.60) + (screenHeight * 0.1);
+                
+                let edgeOffset = window.innerWidth < 450 ? 120 : 150;
+                if (Math.random() > 0.5) {
+                    calculatedLeft = Math.random() * (screenWidth / 2 - edgeOffset) + 10;
+                } else {
+                    calculatedLeft = Math.random() * (screenWidth / 2 - edgeOffset) + (screenWidth / 2 + (edgeOffset - 15));
+                }
+                
+                const moveX = (Math.random() * 24 - 12) + 'px';
+                const moveY = (Math.random() * -40 - 10) + 'px'; 
+                const rRot = (Math.random() * 10 - 5) + 'deg'; // Yumuşak dönüş açısı
+                
+                img.style.setProperty('--move-x', moveX);
+                img.style.setProperty('--move-y', moveY);
+                img.style.setProperty('--r-rot', rRot);
+                
+                img.style.left = calculatedLeft + 'px';
+                img.style.top = calculatedTop + 'px';
+
+                document.getElementById('photo-area').appendChild(img);
+                
+                setTimeout(() => img.remove(), 11800);
+            }, 3200);
+        }
+    </script>
+</body>
+</html>
