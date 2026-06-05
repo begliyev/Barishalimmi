@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kalbimin Sahibine 🌸</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffe5ec 0%, #ffcad4 50%, #b5e2fa 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* GİRİŞ EKRANI */
+        #login-screen {
+            position: fixed; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #ffcad4 0%, #ffe5ec 100%);
+            z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 20px;
+        }
+
+        .terminal-box {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 40px 30px; border-radius: 24px;
+            text-align: center; width: 100%; max-width: 340px;
+            box-shadow: 0 10px 30px rgba(255, 182, 193, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .terminal-header {
+            font-size: 13pt; font-weight: 600; letter-spacing: 1px;
+            margin-bottom: 25px; color: #ff477e;
+        }
+
+        input {
+            background: rgba(255, 255, 255, 0.9); 
+            border: 2px solid #ffb6c1;
+            color: #ff477e; padding: 14px; text-align: center;
+            font-size: 13pt; border-radius: 14px; outline: none;
+            width: 100%;
+        }
+        
+        input:focus {
+            border-color: #ff477e;
+            box-shadow: 0 4px 15px rgba(255, 71, 126, 0.3);
+        }
+
+        /* KATMAN DERİNLİKLERİ (Z-INDEX) */
+        canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+        #particleCanvas { z-index: 1; }
+        #photo-area { position: absolute; width: 100%; height: 100%; left: 0; top: 0; z-index: 2; pointer-events: none; }
+        #heartCanvas { z-index: 3; }
+        #content-overlay {
+            position: absolute; top: 46%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10; display: none; opacity: 0;
+            transition: opacity 1.5s ease;
+            text-align: center;
+            align-items: center;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #content-overlay.show-perfect {
+            display: flex; opacity: 1;
+        }
+
+        .romantic-text {
+            color: #ffffff; font-family: 'Georgia', serif; font-style: italic;
+            line-height: 1.6; font-size: 14pt; font-weight: 600;
+            text-align: center; width: 260px;
+            text-shadow: 0 2px 10px rgba(255, 26, 106, 0.8), 0 4px 20px rgba(255, 71, 126, 0.5);
+            margin-bottom: 25px;
+            min-height: 70px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ETKİLEŞİMLİ EVET / HAYIR BUTONLARI */
+        .btn-container {
+            display: flex; gap: 15px; justify-content: center; align-items: center;
+            pointer-events: auto; width: 100%; min-height: 80px;
+        }
+
+        .love-btn {
+            padding: 12px 24px; border: none; border-radius: 50px;
+            font-size: 11pt; font-weight: bold; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            display: inline-flex; align-items: center; justify-content: center;
+            white-space: nowrap;
+        }
+
+        #yesBtn {
+            background: linear-gradient(135deg, #ff477e 0%, #ff7096 100%);
+            color: white; z-index: 12;
+        }
+
+        #noBtn {
+            background: #ffffff; color: #ff477e;
+            border: 1px solid #ffcad4; z-index: 11;
+        }
+
+        /* KALBİN ARKASINDAN SÜZÜLEN FOTOĞRAFLAR */
+        .floating-photo {
+            position: absolute;
+            border: 3px solid #ffffff; border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(255, 105, 180, 0.15);
+            object-fit: cover; width: 115px; height: 150px;
+            opacity: 0;
+            animation: softGloriousFloat 11s ease-in-out forwards;
+        }
+
+        @keyframes softGloriousFloat {
+            0% { transform: translate(0, 30px) scale(0.9) rotate(-3deg); opacity: 0; }
+            15% { opacity: 0.9; transform: translate(0, 0) scale(1) rotate(var(--r-rot)); }
+            85% { opacity: 0.9; transform: translate(var(--move-x), var(--move-y)) scale(1.02) rotate(var(--r-rot)); }
+            100% { transform: translate(var(--move-x), calc(var(--move-y) - 30px)) scale(0.9) rotate(var(--r-rot)); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- GİRİŞ EKRANI -->
+    <div id="login-screen">
+        <div class="terminal-box">
+            <div class="terminal-header">🌸 Giriş Protokolü</div>
+            <input type="password" id="password" onkeypress="checkPassword(event)" placeholder="Anahtar kelime..." inputmode="text">
+            <div style="margin-top: 15px; font-size: 9.5pt; color: #ff7096;">Açar söz: Leýli</div>
+        </div>
+    </div>
+
+    <canvas id="particleCanvas"></canvas>
+    <div id="photo-area"></div>
+    <canvas id="heartCanvas"></canvas>
+
+    <!-- METİN VE BUTON KATMANI -->
+    <div id="content-overlay">
+        <div class="romantic-text" id="mainText">
+            Barışalım mı,<br>prensesim? 🌹✨
+        </div>
+        <div class="btn-container" id="btnWrapper">
+            <button class="love-btn" id="yesBtn" onclick="handleYes()">Evet! 🥰</button>
+            <button class="love-btn" id="noBtn" onclick="handleNo()">Hayır 🥺</button>
+        </div>
+    </div>
+
+    <script>
+        const pCanvas = document.getElementById('particleCanvas');
+        const pCtx = pCanvas.getContext('2d');
+        const hCanvas = document.getElementById('heartCanvas');
+        const hCtx = hCanvas.getContext('2d');
+
+        function initCanvases() {
+            pCanvas.width = hCanvas.width = window.innerWidth;
+            pCanvas.height = hCanvas.height = window.innerHeight;
+        }
+        initCanvases();
+
+        // PARÇACIKLAR
+        let backgroundParticles = [];
+        let maxBgParticles = 30;
+
+        function createBgParticle() {
+            return {
+                x: Math.random() * pCanvas.width,
+                y: pCanvas.height + Math.random() * 20,
+                size: Math.random() * 3 + 2,
+                speedY: Math.random() * 0.5 + 0.4,
+                opacity: Math.random() * 0.4 + 0.3,
+                isHeart: Math.random() > 0.6,
+                wobble: Math.random() * 2,
+                wobbleSpeed: Math.random() * 0.02 + 0.01
+            };
+        }
+
+        for(let i=0; i<maxBgParticles; i++) {
+            backgroundParticles.push(createBgParticle());
+            backgroundParticles[i].y = Math.random() * pCanvas.height;
+        }
+
+        let heartParticles = [];
+        let heartX = window.innerWidth / 2;
+        let heartY = window.innerHeight * 0.40; 
+        let currentScale = window.innerWidth < 450 ? 6.5 : 8.5; 
+
+        window.addEventListener('resize', () => {
+            initCanvases();
+            heartX = window.innerWidth / 2;
+            heartY = window.innerHeight * 0.40;
+            currentScale = window.innerWidth < 450 ? 6.5 : 8.5;
+            generateHeartParticles();
+        });
+
+        function getHeartPoint(t) {
+            return {
+                x: 16 * Math.pow(Math.sin(t), 3),
+                y: -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t))
+            };
+        }
+
+        function generateHeartParticles() {
+            heartParticles = [];
+            for (let i = 0; i < 150; i++) {
+                let t = (i / 150) * Math.PI * 2;
+                let point = getHeartPoint(t);
+                heartParticles.push({
+                    baseX: heartX + point.x * currentScale,
+                    baseY: heartY + point.y * currentScale,
+                    x: heartX + point.x * currentScale,
+                    y: heartY + point.y * currentScale,
+                    speed: 0.03 + Math.random() * 0.03,
+                    angle: Math.random() * Math.PI * 2,
+                    size: 1.5 + Math.random() * 1.5
+                });
+            }
+        }
+
+        function drawBackgroundParticles() {
+            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+            for (let i = 0; i < backgroundParticles.length; i++) {
+                let p = backgroundParticles[i];
+                p.y -= p.speedY;
+                p.wobble += p.wobbleSpeed;
+                let currentX = p.x + Math.sin(p.wobble) * 15;
+
+                pCtx.fillStyle = `rgba(255, 71, 126, ${p.opacity})`;
+                if (p.isHeart) {
+                    pCtx.font = `${p.size * 3}px serif`;
+                    pCtx.fillText('❤️', currentX, p.y);
+                } else {
+                    pCtx.beginPath();
+                    pCtx.arc(currentX, p.y, p.size, 0, Math.PI * 2);
+                    pCtx.fill();
+                }
+                if (p.y < -20) backgroundParticles[i] = createBgParticle();
+            }
+        }
+
+        function drawHeart() {
+            hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
+            for (let i = 0; i < heartParticles.length; i++) {
+                let p = heartParticles[i];
+                p.angle += p.speed;
+                p.x = p.baseX + Math.sin(p.angle) * 2.0;
+                p.y = p.baseY + Math.cos(p.angle) * 2.0;
+
+                hCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                hCtx.shadowBlur = 10;
+                hCtx.shadowColor = '#ff477e';
+                hCtx.beginPath();
+                hCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                hCtx.fill();
+            }
+            hCtx.shadowBlur = 0; 
+        }
+
+        function engineLoop() {
+            drawBackgroundParticles();
+            drawHeart();
+            requestAnimationFrame(engineLoop);
+        }
+
+        function checkPassword(event) {
+            if (event.key === 'Enter') {
+                const pass = document.getElementById('password').value.trim().toLowerCase();
+                if (pass === 'leýli' || pass === 'leyli') { 
+                    const gate = document.getElementById('login-screen');
+                    gate.style.opacity = '0';
+                    document.getElementById('password').blur();
+
+                    setTimeout(() => {
+                        gate.remove(); 
+                        document.getElementById('content-overlay').classList.add('show-perfect');
+                        generateHeartParticles();
+                        engineLoop(); 
+                        startGloriousPhotoStream(); 
+                    }, 800);
+                } else {
+                    alert('ÝALŇYŞ AÇAR SÖZ!');
+                }
+            }
+        }
+
+        // SADELEŞTİRİLMİŞ 3 ÖZEL HİTAPLI MOTOR
+        let yesScale = 1;
+        let noCount = 0;
+        const noResponses = [
+            "Aşk olsun tontişim... 🥺",
+            "Bir kez daha düşün bence Leýlim? 💔",
+            "Yaa inat etme küçücüğüm... 🌹",
+            "Bu buton artık çalışmıyor ki prensesim! 😜"
+        ];
+
+        function handleNo() {
+            noCount++;
+            const textElement = document.getElementById('mainText');
+            
+            if (noCount <= noResponses.length) {
+                textElement.innerHTML = noResponses[noCount - 1];
+            } else {
+                textElement.innerHTML = "Başka şansın kalmadı Leýlim! 🤭";
+            }
+
+            yesScale += 0.35;
+            const yesBtn = document.getElementById('yesBtn');
+            yesBtn.style.transform = `scale(${yesScale})`;
+            
+            if (yesScale > 2.5) {
+                document.getElementById('noBtn').style.opacity = "0.1";
+                document.getElementById('noBtn').style.pointerEvents = "none";
+            }
+        }
+
+        function handleYes() {
+            document.getElementById('btnWrapper').style.display = 'none';
+            const textElement = document.getElementById('mainText');
+            textElement.innerHTML = "Seni çok seviyorum! ❤️✨<br><span style='font-size:10pt; font-weight:normal;'>İyi ki varsın Leýlim...</span>";
+            
+            maxBgParticles = 80;
+            for(let i=0; i<40; i++) {
+                backgroundParticles.push(createBgParticle());
+            }
+        }
+
+        const photoUrls = [
+            'https://i.ibb.co/C50zxPD4/watermarked-img-10925359437932352695.png',
+            'https://i.ibb.co/r2FbsC7Z/Screenshot-2026-06-05-23-58-56-700-com-android-chrome.jpg',
+            'https://i.ibb.co/FbL2mG2t/Screenshot-2026-06-06-00-07-21-591-com-android-chrome.jpg',
+            'https://i.ibb.co/xSxX9nTw/Screenshot-2026-06-06-00-09-14-448-com-android-chrome.jpg',
+            'https://i.ibb.co/sdbyZhzB/Screenshot-2026-06-06-00-10-35-677-com-android-chrome.jpg',
+            'https://i.ibb.co/pBNyxYng/watermarked-img-10925359437932352695.png'
+        ];
+
+        let currentPhotoIndex = 0;
+        let lastSide = 'left';
+
+        function startGloriousPhotoStream() {
+            setInterval(() => {
+                const img = document.createElement('img');
+                img.src = photoUrls[currentPhotoIndex];
+                currentPhotoIndex = (currentPhotoIndex + 1) % photoUrls.length;
+                img.className = 'floating-photo';
+                
+                const screenWidth = window.innerWidth;
+                const screenHeight = window.innerHeight;
+                
+                let calculatedTop = Math.random() * (screenHeight * 0.40) + (screenHeight * 0.12);
+                let calculatedLeft = 0;
+                
+                if (lastSide === 'left') {
+                    calculatedLeft = Math.random() * (screenWidth * 0.18) + 12;
+                    lastSide = 'right';
+                } else {
+                    calculatedLeft = screenWidth - (Math.random() * (screenWidth * 0.18) + 130);
+                    lastSide = 'left';
+                }
+                
+                const moveX = (Math.random() * 16 - 8) + 'px';
+                const moveY = (Math.random() * -30 - 10) + 'px'; 
+                const rRot = (Math.random() * 8 - 4) + 'deg'; 
+                
+                img.style.setProperty('--move-x', moveX);
+                img.style.setProperty('--move-y', moveY);
+                img.style.setProperty('--r-rot', rRot);
+                
+                img.style.left = calculatedLeft + 'px';
+                img.style.top = calculatedTop + 'px';
+
+                document.getElementById('photo-area').appendChild(img);
+                
+                setTimeout(() => img.remove(), 10800);
+            }, 3200);
+        }
+    </script>
+</body>
+</html>
